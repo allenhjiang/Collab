@@ -1,0 +1,86 @@
+#!/usr/bin/python
+import sys
+import os
+import subprocess
+#4
+bpath = "/Users/hjiang/Documents/back"
+code = ("#include \"stdio.h\"",
+        "#include \"stdlib.h\"",
+        "int main(int argc, char *argv[])",
+        "{",
+        "   return 1;",
+        "}")
+def src_generate(path):
+    if  os.path.exists(path):
+        return 1
+
+    os.system("touch {0}".format(path))
+    fp = open(path, "wr")
+    if not fp:
+        print "can not open file {0} with wr!".format(path)
+        return 0
+
+    fp.write("//{0}\n".format(path))
+    for line in code:
+        fp.write("{0}\n".format(line))
+    fp.close()
+    return 1
+    
+def comp(name):
+    cmd = "gcc -o ./{0} -g ./{0}.c && ./{0}".format(name)
+    os.system(cmd)
+
+def diff(fname1, fname2):
+    if not os.path.exists(fname1) or not os.path.exists(fname2):
+        return 1
+
+    md51 = subprocess.check_output(["md5", "-r", fname1])
+    md52 = subprocess.check_output(["md5", "-r", fname2])
+    if md51.split(" ")[0] == md52.split(" ")[0]:
+        return 0
+    return 1
+
+def backup(name):
+    old = "{0}/{1}.old".format(bpath, name)
+    new = "{0}/{1}.new".format(bpath, name)
+    path = "./{0}".format(name)
+    if diff(path, new) == 1:
+        os.system("mv {0} {1}".format(new, old))
+        os.system("cp {0} {1}".format(path, new))
+
+def edit(path, fname):
+    backup(fname)
+    cmd = "vim {0}".format(path)
+    #process = subprocess.Popen(["vim", path], stdin=open('/dev/tty', 'r'))
+    #process.wait()
+    subprocess.call(cmd, shell=True)
+    #os.system("cat {0}".format(path))
+    backup(fname)
+
+def usage():
+    print "{0} optional {1} optional <-e>".format(sys.argv[0], "<name>")
+
+if __name__ == "__main__":
+    l = len(sys.argv)
+    if l < 2:
+        usage()
+        fname = sys.argv[0].strip('.').strip('/')
+        edit(sys.argv[0], fname)
+        sys.exit()
+
+    name = sys.argv[1]
+    fname = "{0}.c".format(sys.argv[1])
+    path = "./{0}.c".format(name)
+
+    if not src_generate(path):
+        sys.exit()
+
+    if l >=3:
+        mode = sys.argv[2]
+        if mode == "-e":
+            edit(path,fname)
+            comp(name)
+    else:
+        comp(name)
+
+
